@@ -1,0 +1,11 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: tier3-csi
+provisioner: powervs.csi.ibm.com
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  csi.storage.k8s.io/fstype: xfs
+  type: tier3
+allowVolumeExpansion: true
+reclaimPolicy: Delete
