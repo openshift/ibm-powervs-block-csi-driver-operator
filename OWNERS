@@ -1,0 +1,10 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+  - mkumatag
+  - Madhan-SWE
+reviewers:
+  - mkumatag
+  - Madhan-SWE
+component: "Storage"
+subcomponent: "Operators"
