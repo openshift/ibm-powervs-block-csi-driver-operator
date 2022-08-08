@@ -46,7 +46,7 @@ spec:
             - name: IBMCLOUD_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ibm-cloud-credentials
+                  name: ibm-powervs-cloud-credentials
                   key: ibmcloud_api_key
                   optional: true
           volumeMounts:
