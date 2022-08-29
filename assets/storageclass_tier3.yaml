@@ -1,7 +1,7 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: tier3-csi
+  name: ibm-powervs-tier3
 provisioner: powervs.csi.ibm.com
 volumeBindingMode: WaitForFirstConsumer
 parameters:
