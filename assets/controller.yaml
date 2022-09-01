@@ -86,7 +86,7 @@ spec:
               cpu: 10m
         - name: node-update-controller
           image: ${DRIVER_IMAGE}
-          command: ["/node-update-controller"]
+          command: ["/bin/node-update-controller"]
           ports:
             - name: metrics
               containerPort: 8081
