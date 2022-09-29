@@ -109,6 +109,10 @@ spec:
                   name: ibm-powervs-cloud-credentials
                   key: ibmcloud_api_key
                   optional: true
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
         - name: csi-provisioner
           image: ${PROVISIONER_IMAGE}
           imagePullPolicy: IfNotPresent
