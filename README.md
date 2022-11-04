@@ -14,14 +14,14 @@ oc scale --replicas=0 deploy/cluster-version-operator -n openshift-cluster-versi
 oc scale --replicas=0 deploy/cluster-storage-operator -n openshift-cluster-storage-operator
 
 # Delete operator resources (daemonset, deployments)
-oc -n openshift-cluster-csi-drivers delete deployment.apps/ibm-powervs-block-csi-driver-operator deployment.apps/ibm-powervs-block-csi-driver-controller daemonset.apps/ibm-powervs-block-csi-driver-node
+oc -n openshift-cluster-csi-drivers delete deployment.apps/powervs-block-csi-driver-operator deployment.apps/ibm-powervs-block-csi-driver-controller daemonset.apps/ibm-powervs-block-csi-driver-node
 ```
 
 To build and run the operator locally:
 
 ```shell
 # Create only the resources the operator needs to run via CLI
-oc apply -f https://raw.githubusercontent.com/openshift/cluster-storage-operator/master/assets/csidriveroperators/ibm-powervs-block/07_cr.yaml
+oc apply -f https://raw.githubusercontent.com/openshift/cluster-storage-operator/master/assets/csidriveroperators/powervs-block/07_cr.yaml
 
 # Build the operator
 make
