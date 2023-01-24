@@ -14,3 +14,16 @@ ibm-powervs-block-csi-driver-operator
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+.vscode
+.envrc
+
+.kube
+/kubeconfig
+.dockerignore
+.docker
