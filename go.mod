@@ -9,6 +9,7 @@ require (
 	github.com/openshift/library-go v0.0.0-20230127145903-f99cc633d199
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spf13/cobra v1.6.0
+	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
 	k8s.io/component-base v0.26.1
@@ -95,7 +96,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
 	k8s.io/apiserver v0.26.1 // indirect
 	k8s.io/kms v0.26.1 // indirect
