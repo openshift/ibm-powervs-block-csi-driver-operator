@@ -1,7 +1,7 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: ibm-powervs-block-csi-attacher-binding
+  name: ibm-powervs-block-csi-main-attacher-binding
 subjects:
   - kind: ServiceAccount
     name: ibm-powervs-block-csi-driver-controller-sa
