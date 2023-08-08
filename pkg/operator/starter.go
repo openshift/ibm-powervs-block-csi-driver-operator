@@ -25,11 +25,12 @@ import (
 
 const (
 	// Operand and operator run in the same namespace
-	defaultNamespace   = "openshift-cluster-csi-drivers"
-	operatorName       = "ibm-powervs-block-csi-driver-operator"
-	operandName        = "ibm-powervs-block-csi-driver"
-	secretName         = "ibm-powervs-block-cloud-credentials"
-	trustedCAConfigMap = "ibm-powervs-block-csi-driver-trusted-ca-bundle"
+	defaultNamespace      = "openshift-cluster-csi-drivers"
+	operatorName          = "ibm-powervs-block-csi-driver-operator"
+	operandName           = "ibm-powervs-block-csi-driver"
+	cloudCredSecretName   = "ibm-powervs-block-cloud-credentials"
+	metricsCertSecretName = "ibm-powervs-block-csi-driver-controller-metrics-serving-cert"
+	trustedCAConfigMap    = "ibm-powervs-block-csi-driver-trusted-ca-bundle"
 )
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
@@ -119,7 +120,12 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		),
 		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
 			defaultNamespace,
-			secretName,
+			cloudCredSecretName,
+			secretInformer,
+		),
+		csidrivercontrollerservicecontroller.WithSecretHashAnnotationHook(
+			defaultNamespace,
+			metricsCertSecretName,
 			secretInformer,
 		),
 		csidrivercontrollerservicecontroller.WithReplicasHook(nodeInformer.Lister()),
