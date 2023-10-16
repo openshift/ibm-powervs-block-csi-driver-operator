@@ -11,11 +11,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
+	operatorinformer "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/csi/credentialsrequestcontroller"
 	"github.com/openshift/library-go/pkg/operator/csi/csiconfigobservercontroller"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
+	"github.com/openshift/library-go/pkg/operator/csi/csistorageclasscontroller"
 	"github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
@@ -33,11 +35,13 @@ type CSIControllerSet struct {
 	logLevelController                   factory.Controller
 	managementStateController            factory.Controller
 	staticResourcesController            factory.Controller
+	conditionalStaticResourcesController factory.Controller
 	credentialsRequestController         factory.Controller
 	csiConfigObserverController          factory.Controller
 	csiDriverControllerServiceController factory.Controller
 	csiDriverNodeServiceController       factory.Controller
 	serviceMonitorController             factory.Controller
+	csiStorageclassController            factory.Controller
 
 	operatorClient v1helpers.OperatorClientWithFinalizers
 	eventRecorder  events.Recorder
@@ -49,11 +53,13 @@ func (c *CSIControllerSet) Run(ctx context.Context, workers int) {
 		c.logLevelController,
 		c.managementStateController,
 		c.staticResourcesController,
+		c.conditionalStaticResourcesController,
 		c.credentialsRequestController,
 		c.csiConfigObserverController,
 		c.csiDriverControllerServiceController,
 		c.csiDriverNodeServiceController,
 		c.serviceMonitorController,
+		c.csiStorageclassController,
 	} {
 		if ctrl == nil {
 			continue
@@ -77,6 +83,32 @@ func (c *CSIControllerSet) WithManagementStateController(operandName string, sup
 	if !supportsOperandRemoval {
 		management.SetOperatorNotRemovable()
 	}
+	return c
+}
+
+// WithConditionalStaticResourcesController returns a *ControllerSet with a conditional static resources controller initialized.
+func (c *CSIControllerSet) WithConditionalStaticResourcesController(
+	name string,
+	kubeClient kubernetes.Interface,
+	dynamicClient dynamic.Interface,
+	kubeInformersForNamespace v1helpers.KubeInformersForNamespaces,
+	manifests resourceapply.AssetFunc,
+	files []string,
+	shouldCreateFnArg, shouldDeleteFnArg resourceapply.ConditionalFunction,
+) *CSIControllerSet {
+	c.conditionalStaticResourcesController = staticresourcecontroller.NewStaticResourceController(
+		name,
+		manifests,
+		[]string{},
+		(&resourceapply.ClientHolder{}).WithKubernetes(kubeClient).WithDynamicClient(dynamicClient),
+		c.operatorClient,
+		c.eventRecorder,
+	).WithConditionalResources(
+		manifests,
+		files,
+		shouldCreateFnArg,
+		shouldDeleteFnArg,
+	).AddKubeInformers(kubeInformersForNamespace)
 	return c
 }
 
@@ -107,6 +139,7 @@ func (c *CSIControllerSet) WithCredentialsRequestController(
 	assetFunc resourceapply.AssetFunc,
 	file string,
 	dynamicClient dynamic.Interface,
+	operatorInformer operatorinformer.SharedInformerFactory,
 ) *CSIControllerSet {
 	manifestFile, err := assetFunc(file)
 	if err != nil {
@@ -118,6 +151,7 @@ func (c *CSIControllerSet) WithCredentialsRequestController(
 		manifestFile,
 		dynamicClient,
 		c.operatorClient,
+		operatorInformer,
 		c.eventRecorder,
 	)
 	return c
@@ -207,6 +241,27 @@ func (c *CSIControllerSet) WithServiceMonitorController(
 		c.operatorClient,
 		c.eventRecorder,
 	).WithIgnoreNotFoundOnCreate()
+	return c
+}
+
+func (c *CSIControllerSet) WithStorageClassController(
+	name string,
+	assetFunc resourceapply.AssetFunc,
+	file string,
+	kubeClient kubernetes.Interface,
+	namespacedInformerFactory informers.SharedInformerFactory,
+	hooks ...csistorageclasscontroller.StorageClassHookFunc,
+) *CSIControllerSet {
+	c.csiStorageclassController = csistorageclasscontroller.NewCSIStorageClassController(
+		name,
+		assetFunc,
+		file,
+		kubeClient,
+		namespacedInformerFactory,
+		c.operatorClient,
+		c.eventRecorder,
+		hooks...,
+	)
 	return c
 }
 
