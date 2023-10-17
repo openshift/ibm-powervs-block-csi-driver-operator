@@ -2,7 +2,7 @@
 
 approvers:
   - mkumatag
-  - Madhan-SWE
+  - yussufsh
   - jsafrane
   - gnufied
   - bertinatto
@@ -12,5 +12,5 @@ approvers:
   - mpatlasov
 reviewers:
   - mkumatag
-  - Madhan-SWE
+  - yussufsh
 component: "Multi-Arch / IBM P and Z"
