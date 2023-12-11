@@ -20,6 +20,8 @@ spec:
         app: ibm-powervs-block-csi-driver-node
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        # This annotation prevents eviction from the cluster-autoscaler
+        cluster-autoscaler.kubernetes.io/enable-ds-eviction: "false"
     spec:
       hostNetwork: true
       serviceAccount: ibm-powervs-block-csi-driver-node-sa
