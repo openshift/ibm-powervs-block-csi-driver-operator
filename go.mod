@@ -2,8 +2,6 @@ module github.com/openshift/ibm-powervs-block-csi-driver-operator
 
 go 1.21
 
-toolchain go1.21.3
-
 require (
 	github.com/openshift/api v0.0.0-20240202140003-8b34b9854c7f
 	github.com/openshift/build-machinery-go v0.0.0-20230824093055-6a18da01283c
