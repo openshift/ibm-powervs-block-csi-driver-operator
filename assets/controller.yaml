@@ -86,6 +86,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: node-update-controller
           image: ${DRIVER_IMAGE}
           command: ["/bin/node-update-controller"]
@@ -115,6 +116,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-provisioner
           image: ${PROVISIONER_IMAGE}
           imagePullPolicy: IfNotPresent
@@ -140,6 +142,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
           # kube-rbac-proxy for external-provisioner container.
           # Provides https proxy for http-based external-provisioner metrics.
         - name: provisioner-kube-rbac-proxy
@@ -162,6 +165,7 @@ spec:
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-attacher
           image: ${ATTACHER_IMAGE}
           imagePullPolicy: IfNotPresent
@@ -183,6 +187,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: attacher-kube-rbac-proxy
           args:
           - --secure-listen-address=0.0.0.0:9203
@@ -203,6 +208,7 @@ spec:
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-resizer
           image: ${RESIZER_IMAGE}
           imagePullPolicy: IfNotPresent
@@ -224,6 +230,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: resizer-kube-rbac-proxy
           args:
           - --secure-listen-address=0.0.0.0:9204
@@ -244,6 +251,7 @@ spec:
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-liveness-probe
           image: ${LIVENESS_PROBE_IMAGE}
           imagePullPolicy: IfNotPresent
@@ -259,6 +267,7 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          terminationMessagePolicy: FallbackToLogsOnError
       volumes:
         - name: socket-dir
           emptyDir: {}
