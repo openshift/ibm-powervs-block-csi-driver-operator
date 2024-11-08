@@ -8,3 +8,4 @@ spec:
   selector:
     matchLabels:
       app: ibm-powervs-block-csi-driver-controller
+  unhealthyEvictionPolicy: AlwaysAllow
