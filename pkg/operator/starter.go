@@ -2,16 +2,21 @@ package operator
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 
 	opv1 "github.com/openshift/api/operator/v1"
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
+	applyopv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/ibm-powervs-block-csi-driver-operator/assets"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -47,7 +52,16 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 
 	// Create GenericOperatorclient. This is used by the library-go controllers created down below
 	gvr := opv1.SchemeGroupVersion.WithResource("clustercsidrivers")
-	operatorClient, dynamicInformers, err := goc.NewClusterScopedOperatorClientWithConfigName(controllerConfig.KubeConfig, gvr, string(opv1.IBMPowerVSBlockCSIDriver))
+	gvk := opv1.SchemeGroupVersion.WithKind("ClusterCSIDriver")
+	operatorClient, dynamicInformers, err := goc.NewClusterScopedOperatorClientWithConfigName(
+		clock.RealClock{},
+		controllerConfig.KubeConfig,
+		gvr,
+		gvk,
+		string(opv1.IBMPowerVSBlockCSIDriver),
+		extractOperatorSpec,
+		extractOperatorStatus,
+	)
 	if err != nil {
 		return err
 	}
@@ -127,7 +141,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			metricsCertSecretName,
 			secretInformer,
 		),
-		csidrivercontrollerservicecontroller.WithReplicasHook(nodeInformer.Lister()),
+		csidrivercontrollerservicecontroller.WithReplicasHook(configInformers),
 	).WithCSIDriverNodeService(
 		"PowerVSBlockDriverNodeServiceController",
 		assets.ReadFile,
@@ -163,4 +177,35 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 	<-ctx.Done()
 
 	return nil
+}
+
+func extractOperatorSpec(obj *unstructured.Unstructured, fieldManager string) (*applyopv1.OperatorSpecApplyConfiguration, error) {
+	castObj := &opv1.ClusterCSIDriver{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+		return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+	}
+	ret, err := applyopv1.ExtractClusterCSIDriver(castObj, fieldManager)
+	if err != nil {
+		return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+	}
+	if ret.Spec == nil {
+		return nil, nil
+	}
+	return &ret.Spec.OperatorSpecApplyConfiguration, nil
+}
+
+func extractOperatorStatus(obj *unstructured.Unstructured, fieldManager string) (*applyopv1.OperatorStatusApplyConfiguration, error) {
+	castObj := &opv1.ClusterCSIDriver{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, castObj); err != nil {
+		return nil, fmt.Errorf("unable to convert to ClusterCSIDriver: %w", err)
+	}
+	ret, err := applyopv1.ExtractClusterCSIDriverStatus(castObj, fieldManager)
+	if err != nil {
+		return nil, fmt.Errorf("unable to extract fields for %q: %w", fieldManager, err)
+	}
+
+	if ret.Status == nil {
+		return nil, nil
+	}
+	return &ret.Status.OperatorStatusApplyConfiguration, nil
 }
