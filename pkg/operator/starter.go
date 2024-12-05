@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -16,6 +18,7 @@ import (
 	opv1 "github.com/openshift/api/operator/v1"
 	configclient "github.com/openshift/client-go/config/clientset/versioned"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
+	v1 "github.com/openshift/client-go/config/listers/config/v1"
 	applyopv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	"github.com/openshift/ibm-powervs-block-csi-driver-operator/assets"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -23,18 +26,31 @@ import (
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
+	dc "github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
 const (
 	// Operand and operator run in the same namespace
+	csiDriver             = "csi-driver"
 	defaultNamespace      = "openshift-cluster-csi-drivers"
 	operatorName          = "ibm-powervs-block-csi-driver-operator"
 	operandName           = "ibm-powervs-block-csi-driver"
 	cloudCredSecretName   = "ibm-powervs-block-cloud-credentials"
 	metricsCertSecretName = "ibm-powervs-block-csi-driver-controller-metrics-serving-cert"
 	trustedCAConfigMap    = "ibm-powervs-block-csi-driver-trusted-ca-bundle"
+	infrastructureName    = "cluster"
+)
+
+// endPointKeyToEnvNameMap is a mapping of serviceEndpoint keys to their respective environment variables that are exposed in
+// the CSI Driver
+var (
+	endPointKeyToEnvNameMap = map[string]string{
+		"iam": "IBMCLOUD_IAM_API_ENDPOINT",
+		"rc":  "IBMCLOUD_RESOURCE_CONTROLLER_API_ENDPOINT",
+		"pi":  "IBMCLOUD_POWER_API_ENDPOINT",
+	}
 )
 
 func RunOperator(ctx context.Context, controllerConfig *controllercmd.ControllerContext) error {
@@ -142,6 +158,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			secretInformer,
 		),
 		csidrivercontrollerservicecontroller.WithReplicasHook(configInformers),
+		withCustomEndPoint(infraInformer.Lister()),
 	).WithCSIDriverNodeService(
 		"PowerVSBlockDriverNodeServiceController",
 		assets.ReadFile,
@@ -161,11 +178,6 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		assets.ReadFile,
 		"servicemonitor.yaml",
 	)
-
-	if err != nil {
-		return err
-	}
-
 	klog.Info("Starting the informers")
 	go kubeInformersForNamespaces.Start(ctx.Done())
 	go dynamicInformers.Start(ctx.Done())
@@ -208,4 +220,41 @@ func extractOperatorStatus(obj *unstructured.Unstructured, fieldManager string) 
 		return nil, nil
 	}
 	return &ret.Status.OperatorStatusApplyConfiguration, nil
+}
+
+func withCustomEndPoint(infraLister v1.InfrastructureLister) dc.DeploymentHookFunc {
+	return func(_ *opv1.OperatorSpec, deployment *appsv1.Deployment) error {
+		infra, err := infraLister.Get(infrastructureName)
+		if err != nil {
+			return err
+		}
+		if infra.Status.PlatformStatus == nil || infra.Status.PlatformStatus.PowerVS == nil {
+			return nil
+		}
+		serviceEndPoints := infra.Status.PlatformStatus.PowerVS.ServiceEndpoints
+		if len(serviceEndPoints) == 0 {
+			return nil
+		}
+		var containerEnvVars []corev1.EnvVar
+		for _, serviceEndPoint := range serviceEndPoints {
+			if _, ok := endPointKeyToEnvNameMap[serviceEndPoint.Name]; !ok {
+				klog.Infof("Ignoring %q serviceEndpoint", serviceEndPoint.Name)
+				continue
+			}
+			containerEnvVars = append(containerEnvVars, corev1.EnvVar{
+				Name:  endPointKeyToEnvNameMap[serviceEndPoint.Name],
+				Value: serviceEndPoint.URL,
+			})
+		}
+
+		for i := range deployment.Spec.Template.Spec.Containers {
+			container := &deployment.Spec.Template.Spec.Containers[i]
+			if container.Name != csiDriver {
+				continue
+			}
+			container.Env = append(container.Env, containerEnvVars...)
+			return nil
+		}
+		return nil
+	}
 }
