@@ -160,7 +160,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			secretInformer,
 		),
 		csidrivercontrollerservicecontroller.WithReplicasHook(configInformers),
-		withCustomEndPoint(infraInformer.Lister()),
+		withCustomEndPointForDeployment(infraInformer.Lister()),
 	).WithCSIDriverNodeService(
 		"PowerVSBlockDriverNodeServiceController",
 		assets.ReadFile,
@@ -174,6 +174,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			trustedCAConfigMap,
 			configMapInformer,
 		),
+		withCustomEndpointForDaemonset(infraInformer.Lister()),
 	).WithServiceMonitorController(
 		"PowerVSBlockCSIServiceMonitorController",
 		dynamicClient,
@@ -224,7 +225,7 @@ func extractOperatorStatus(obj *unstructured.Unstructured, fieldManager string) 
 	return &ret.Status.OperatorStatusApplyConfiguration, nil
 }
 
-func withCustomEndPoint(infraLister v1.InfrastructureLister) dc.DeploymentHookFunc {
+func withCustomEndPointForDeployment(infraLister v1.InfrastructureLister) dc.DeploymentHookFunc {
 	return func(_ *opv1.OperatorSpec, deployment *appsv1.Deployment) error {
 		infra, err := infraLister.Get(infrastructureName)
 		if err != nil {
@@ -251,6 +252,43 @@ func withCustomEndPoint(infraLister v1.InfrastructureLister) dc.DeploymentHookFu
 
 		for i := range deployment.Spec.Template.Spec.Containers {
 			container := &deployment.Spec.Template.Spec.Containers[i]
+			if container.Name != csiDriver {
+				continue
+			}
+			container.Env = append(container.Env, containerEnvVars...)
+			return nil
+		}
+		return nil
+	}
+}
+
+func withCustomEndpointForDaemonset(infraLister v1.InfrastructureLister) csidrivernodeservicecontroller.DaemonSetHookFunc {
+	return func(_ *opv1.OperatorSpec, daemonset *appsv1.DaemonSet) error {
+		infra, err := infraLister.Get(infrastructureName)
+		if err != nil {
+			return err
+		}
+		if infra.Status.PlatformStatus == nil || infra.Status.PlatformStatus.PowerVS == nil {
+			return nil
+		}
+		serviceEndPoints := infra.Status.PlatformStatus.PowerVS.ServiceEndpoints
+		if len(serviceEndPoints) == 0 {
+			return nil
+		}
+		var containerEnvVars []corev1.EnvVar
+		for _, serviceEndPoint := range serviceEndPoints {
+			if _, ok := endPointKeyToEnvNameMap[serviceEndPoint.Name]; !ok {
+				klog.Infof("Ignoring %q serviceEndpoint", serviceEndPoint.Name)
+				continue
+			}
+			containerEnvVars = append(containerEnvVars, corev1.EnvVar{
+				Name:  endPointKeyToEnvNameMap[serviceEndPoint.Name],
+				Value: serviceEndPoint.URL,
+			})
+		}
+
+		for i := range daemonset.Spec.Template.Spec.Containers {
+			container := &daemonset.Spec.Template.Spec.Containers[i]
 			if container.Name != csiDriver {
 				continue
 			}

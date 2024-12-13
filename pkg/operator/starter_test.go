@@ -215,7 +215,7 @@ func TestWithCustomEndPoint(t *testing.T) {
 				return configInformerFactory.Config().V1().Infrastructures().Informer().HasSynced(), nil
 			})
 			deployment := test.inDeployment.DeepCopy()
-			err := withCustomEndPoint(configInformerFactory.Config().V1().Infrastructures().Lister())(nil, deployment)
+			err := withCustomEndPointForDeployment(configInformerFactory.Config().V1().Infrastructures().Lister())(nil, deployment)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}

@@ -18,7 +18,7 @@ oc -n openshift-cluster-csi-drivers delete deployment.apps/powervs-block-csi-dri
 ```
 
 # Define custom endpoints for the CSI driver:
-Include a [serviceEndpoints](https://docs.openshift.com/container-platform/4.17/rest_api/config_apis/infrastructure-config-openshift-io-v1.html#spec-platformspec-powervs-serviceendpoints-2) section to configure non-default endpoints, which is defined
+Include a [serviceEndpoints](https://docs.openshift.com/container-platform/latest/rest_api/config_apis/infrastructure-config-openshift-io-v1.html#spec-platformspec-powervs-serviceendpoints-2) section to configure non-default endpoints, which is defined
 under [v1_Infrastructure](https://github.com/openshift/api/blob/master/config/v1/types_infrastructure.go#L1717-L1724)
 
 For example:
