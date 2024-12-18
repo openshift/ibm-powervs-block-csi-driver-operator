@@ -3,12 +3,13 @@ module github.com/openshift/ibm-powervs-block-csi-driver-operator
 go 1.22.0
 
 require (
-	github.com/openshift/api v0.0.0-20241121150700-ec9bf3faa1aa
+	github.com/openshift/api v0.0.0-20241206130210-831aaaf072a9
 	github.com/openshift/build-machinery-go v0.0.0-20240613134303-8359781da660
 	github.com/openshift/client-go v0.0.0-20241001162912-da6d55e4611f
 	github.com/openshift/library-go v0.0.0-20241104153602-864cc9d1d646
 	github.com/prometheus/client_golang v1.20.5
 	github.com/spf13/cobra v1.8.1
+	k8s.io/api v0.31.2
 	k8s.io/apimachinery v0.31.2
 	k8s.io/client-go v0.31.2
 	k8s.io/component-base v0.31.2
@@ -103,7 +104,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.31.2 // indirect
 	k8s.io/apiextensions-apiserver v0.31.2 // indirect
 	k8s.io/apiserver v0.31.2 // indirect
 	k8s.io/kms v0.31.2 // indirect
