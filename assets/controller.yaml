@@ -87,6 +87,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
         - name: node-update-controller
           image: ${DRIVER_IMAGE}
@@ -117,6 +119,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-provisioner
           image: ${PROVISIONER_IMAGE}
@@ -143,6 +147,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
           # kube-rbac-proxy for external-provisioner container.
           # Provides https proxy for http-based external-provisioner metrics.
@@ -163,6 +169,8 @@ spec:
             requests:
               memory: 20Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
@@ -188,6 +196,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
         - name: attacher-kube-rbac-proxy
           args:
@@ -206,6 +216,8 @@ spec:
             requests:
               memory: 20Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
@@ -231,6 +243,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
         - name: resizer-kube-rbac-proxy
           args:
@@ -249,6 +263,8 @@ spec:
             requests:
               memory: 20Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           volumeMounts:
           - mountPath: /etc/tls/private
             name: metrics-serving-cert
@@ -268,6 +284,8 @@ spec:
             requests:
               memory: 50Mi
               cpu: 10m
+          securityContext:
+            readOnlyRootFilesystem: true
           terminationMessagePolicy: FallbackToLogsOnError
       volumes:
         - name: socket-dir
