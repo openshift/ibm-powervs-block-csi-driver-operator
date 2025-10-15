@@ -6,6 +6,8 @@ metadata:
   annotations:
     config.openshift.io/inject-proxy: csi-driver,node-update-controller
     config.openshift.io/inject-proxy-cabundle: csi-driver,node-update-controller
+  labels:
+    hypershift.openshift.io/managed-by: cluster-storage-operator
 spec:
   strategy:
     type: RollingUpdate
