@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -28,6 +29,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
 	dc "github.com/openshift/library-go/pkg/operator/deploymentcontroller"
 	goc "github.com/openshift/library-go/pkg/operator/genericoperatorclient"
+	"github.com/openshift/library-go/pkg/operator/status"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
@@ -132,7 +134,7 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		configInformers,
 	).WithCSIDriverControllerService(
 		"PowerVSBlockDriverControllerServiceController",
-		assets.ReadFile,
+		getAsset,
 		"controller.yaml",
 		kubeClient,
 		kubeInformersForNamespaces.InformersFor(defaultNamespace),
@@ -297,4 +299,14 @@ func withCustomEndpointForDaemonset(infraLister v1.InfrastructureLister) csidriv
 		}
 		return nil
 	}
+}
+
+func getAsset(assetName string) ([]byte, error) {
+	asset, err := assets.ReadFile(assetName)
+	if err != nil {
+		return nil, err
+	}
+	replacer := strings.NewReplacer("${RELEASE_VERSION}", status.VersionForOperatorFromEnv())
+	assetString := replacer.Replace(string(asset))
+	return []byte(assetString), nil
 }
