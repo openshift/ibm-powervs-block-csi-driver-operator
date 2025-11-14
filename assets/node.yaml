@@ -25,7 +25,7 @@ spec:
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "false"
     spec:
       hostNetwork: true
-      serviceAccount: ibm-powervs-block-csi-driver-node-sa
+      serviceAccountName: ibm-powervs-block-csi-driver-node-sa
       priorityClassName: system-node-critical
       tolerations:
         - operator: Exists
