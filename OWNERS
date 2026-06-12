@@ -11,7 +11,13 @@ approvers:
   - mpatlasov
   - rhrmo
   - dfajmon
+  - prb112
+  - mjturek
+  - hamzy
 reviewers:
   - mkumatag
   - yussufsh
+  - prb112
+  - mjturek
+  - hamzy
 component: "Multi-Arch / IBM P and Z"
