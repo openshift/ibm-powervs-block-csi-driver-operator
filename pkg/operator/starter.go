@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/openshift/ibm-powervs-block-csi-driver-operator/assets"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/csi/csicontrollerset"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivercontrollerservicecontroller"
 	"github.com/openshift/library-go/pkg/operator/csi/csidrivernodeservicecontroller"
@@ -44,6 +46,8 @@ const (
 	metricsCertSecretName = "ibm-powervs-block-csi-driver-controller-metrics-serving-cert"
 	trustedCAConfigMap    = "ibm-powervs-block-csi-driver-trusted-ca-bundle"
 	infrastructureName    = "cluster"
+
+	operatorImageVersionEnvVarName = "OPERATOR_IMAGE_VERSION"
 )
 
 // endPointKeyToEnvNameMap is a mapping of serviceEndpoint keys to their respective environment variables that are exposed in
@@ -92,6 +96,25 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 		return err
 	}
 
+	// Build a FeatureGateAccess so the CSI config observer can honor the
+	// TLSGroupPreferences feature gate when observing TLS group (curve)
+	// preferences. The observer tolerates feature gates not being observed yet
+	// and re-syncs once they are, so we do not block here.
+	version := os.Getenv(operatorImageVersionEnvVarName)
+	missingVersion := "0.0.1-snapshot"
+	if version == "" {
+		version = missingVersion // No OPERATOR_IMAGE_VERSION; derive from ClusterVersion
+	}
+
+	featureGateAccessor := featuregates.NewFeatureGateAccess(
+		version,
+		missingVersion,
+		configInformers.Config().V1().ClusterVersions(),
+		configInformers.Config().V1().FeatureGates(),
+		controllerConfig.EventRecorder,
+	)
+	go featureGateAccessor.Run(ctx)
+
 	csiControllerSet := csicontrollerset.NewCSIControllerSet(
 		operatorClient,
 		controllerConfig.EventRecorder,
@@ -130,9 +153,10 @@ func RunOperator(ctx context.Context, controllerConfig *controllercmd.Controller
 			"rbac/lease_leader_election_role.yaml",
 			"rbac/lease_leader_election_rolebinding.yaml",
 		},
-	).WithCSIConfigObserverController(
+	).WithCSIConfigObserverControllerWithFeatureGates(
 		"PowerVSBlockDriverCSIConfigObserverController",
 		configInformers,
+		featureGateAccessor,
 	).WithCSIDriverControllerService(
 		"PowerVSBlockDriverControllerServiceController",
 		getAsset,
